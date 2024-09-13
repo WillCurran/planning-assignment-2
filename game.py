@@ -1,4 +1,19 @@
+import copy
 import numpy as np
+
+
+# Ordered clockwise
+KNIGHT_MOVE_POS_DELTA = [
+    (-2, -1),
+    (-1, -2),
+    (1, -2),
+    (2, -1),
+    (-2, 1),
+    (-1, 2),
+    (1, 2),
+    (2, 1),
+]
+
 
 class BoardState:
     """
@@ -108,7 +123,7 @@ class BoardState:
 class Rules:
 
     @staticmethod
-    def single_piece_actions(board_state, piece_idx):
+    def single_piece_actions(board_state: BoardState, piece_idx):
         """
         Returns the set of possible actions for the given piece, assumed to be a valid piece located
         at piece_idx in the board_state.state.
@@ -120,10 +135,20 @@ class Rules:
 
         Output: an iterable (set or list or tuple) of integers which indicate the encoded positions
             that piece_idx can move to during this turn.
-        
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        assert board_state.is_valid()
+        assert piece_idx >= 0
+        assert piece_idx < board_state.state.size
+        col, row = board_state.decode_single_pos(board_state.state[piece_idx])
+        valid_moves = []
+        for d_col, d_row in KNIGHT_MOVE_POS_DELTA:
+            # Try this update
+            new_idx = board_state.encode_single_pos(col + d_col, row + d_row)
+            candidate_board = copy.deepcopy(board_state)
+            candidate_board.update(piece_idx, new_idx)
+            if candidate_board.is_valid():
+                valid_moves.append(new_idx)
+        return valid_moves
 
     @staticmethod
     def single_ball_actions(board_state, player_idx):

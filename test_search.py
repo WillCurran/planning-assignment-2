@@ -346,3 +346,9 @@ class TestSearch:
         predicted_reachable_encoded = Rules.single_ball_actions(board, player)
         encoded_reachable = set(board.encode_single_pos(cr) for cr in reachable)
         assert predicted_reachable_encoded == encoded_reachable
+
+
+class TestRules:
+    
+    def test_single_piece_actions():
+        pass
