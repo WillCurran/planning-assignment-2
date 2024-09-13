@@ -13,7 +13,27 @@ class BoardState:
         self.N_COLS = 7
 
         self.state = np.array([1,2,3,4,5,3,50,51,52,53,54,52])
+        self.IDX_BALL_WHITE = 5
+        self.IDX_BALL_BLACK = 11
         self.decode_state = [self.decode_single_pos(d) for d in self.state]
+
+    def _white_pieces(self):
+        """
+        Return copy of white pieces in state
+        """
+        return self.state.copy()[:5]
+    
+    def _black_pieces(self):
+        """
+        Return copy of black pieces in state
+        """
+        return self.state.copy()[6:11]
+    
+    def _all_pieces(self):
+        """
+        Return white and black pieces, and no ball positions.
+        """
+        return np.concatenate((self._white_pieces(), self._black_pieces()))
 
     def update(self, idx, val):
         """
@@ -34,10 +54,8 @@ class BoardState:
 
         Input: a tuple (col, row)
         Output: an integer in the interval [0, 55] inclusive
-
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        return cr[0] + cr[1] * self.N_COLS 
 
     def decode_single_pos(self, n: int):
         """
@@ -45,10 +63,10 @@ class BoardState:
 
         Input: an integer in the interval [0, 55] inclusive
         Output: a tuple (col, row)
-
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        row = n // self.N_COLS
+        col = n % self.N_COLS
+        return (col, row)
 
     def is_termination_state(self):
         """
@@ -56,26 +74,36 @@ class BoardState:
         one of the player's move their ball to the opposite side of the board.
 
         You can assume that `self.state` contains the current state of the board, so
-        check whether self.state represents a termainal board state, and return True or False.
-        
-        TODO: You need to implement this.
+        check whether self.state represents a terminal board state, and return True or False.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        _, white_ball_row = self.decode_single_pos(self.state[self.IDX_BALL_WHITE])
+        _, black_ball_row = self.decode_single_pos(self.state[self.IDX_BALL_BLACK])
+        return all((
+            self.is_valid(),
+            white_ball_row == (self.N_ROWS - 1) or black_ball_row == 0,
+        ))
 
     def is_valid(self):
         """
         Checks if a board configuration is valid. This function checks whether the current
         value self.state represents a valid board configuration or not. This encodes and checks
-        the various constrainsts that must always be satisfied in any valid board state during a game.
+        the various constraints that must always be satisfied in any valid board state during a game.
 
         If we give you a self.state array of 12 arbitrary integers, this function should indicate whether
         it represents a valid board configuration.
 
         Output: return True (if valid) or False (if not valid)
-        
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        return all((
+            # Pieces and balls inside board
+            np.all(self.state >= 0),
+            np.all(self.state < (self.N_COLS * self.N_ROWS)),
+            # Pieces are on their own squares
+            self._all_pieces().size == np.unique(self._all_pieces()).size,
+            # Balls are on a piece of their color
+            self.state[self.IDX_BALL_WHITE] in self._white_pieces(),
+            self.state[self.IDX_BALL_BLACK] in self._black_pieces(),
+        ))
 
 class Rules:
 
