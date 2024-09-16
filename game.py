@@ -63,6 +63,14 @@ class BoardState:
         """
         return [self.decode_single_pos(d) for d in self.state]
 
+    def valid_decoded_pos(self, cr: tuple):
+        return all((
+            cr[0] >= 0,
+            cr[0] < self.N_COLS,
+            cr[1] >= 0,
+            cr[1] < self.N_ROWS,
+        ))
+    
     def encode_single_pos(self, cr: tuple):
         """
         Encodes a single coordinate (col, row) -> Z
@@ -70,6 +78,7 @@ class BoardState:
         Input: a tuple (col, row)
         Output: an integer in the interval [0, 55] inclusive
         """
+        assert self.valid_decoded_pos(cr)
         return cr[0] + cr[1] * self.N_COLS 
 
     def decode_single_pos(self, n: int):
@@ -146,6 +155,8 @@ class Rules:
         valid_moves = []
         for d_col, d_row in KNIGHT_MOVE_POS_DELTA:
             # Try this update
+            if not board_state.valid_decoded_pos((col + d_col, row + d_row)):
+                continue
             new_idx = board_state.encode_single_pos((col + d_col, row + d_row))
             candidate_board = copy.deepcopy(board_state)
             candidate_board.update(piece_idx, new_idx)

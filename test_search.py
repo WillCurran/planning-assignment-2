@@ -356,8 +356,11 @@ class TestRules:
         # Knight's moves should be available
         assert set(Rules.single_piece_actions(board_state, 0)) == set((10, 14, 16))
         assert set(Rules.single_piece_actions(board_state, 1)) == set((7, 15, 17, 11))
-        assert set(Rules.single_piece_actions(board_state, 2)) == set((8, 16, 18, 12))
-        assert set(Rules.single_piece_actions(board_state, 8)) == set((43, 37, 39, 47))
+        assert set(Rules.single_piece_actions(board_state, 3)) == set((9, 17, 19, 13))
+        assert set(Rules.single_piece_actions(board_state, 9)) == set((44, 38, 40, 48))
+        # Piece with ball cannot move
+        assert set(Rules.single_piece_actions(board_state, 2)) == set()
+        assert set(Rules.single_piece_actions(board_state, 8)) == set()
         # Construct example with same team and other team blocking possible moves
-        board_state.state = np.array([24,11,19,4,5,3,50,51,37,33,54,52])
+        board_state.state = np.array([24,11,19,4,5,11,50,51,37,33,54,54])
         assert set(Rules.single_piece_actions(board_state, 0)) == set((39, 29, 15, 9))
