@@ -350,5 +350,14 @@ class TestSearch:
 
 class TestRules:
     
-    def test_single_piece_actions():
-        pass
+    def test_single_piece_actions(self):
+        # Default state has pieces [1,2,3,4,5,3,50,51,52,53,54,52]
+        board_state = BoardState()
+        # Knight's moves should be available
+        assert set(Rules.single_piece_actions(board_state, 0)) == set((10, 14, 16))
+        assert set(Rules.single_piece_actions(board_state, 1)) == set((7, 15, 17, 11))
+        assert set(Rules.single_piece_actions(board_state, 2)) == set((8, 16, 18, 12))
+        assert set(Rules.single_piece_actions(board_state, 8)) == set((43, 37, 39, 47))
+        # Construct example with same team and other team blocking possible moves
+        board_state.state = np.array([24,11,19,4,5,3,50,51,37,33,54,52])
+        assert set(Rules.single_piece_actions(board_state, 0)) == set((39, 29, 15, 9))

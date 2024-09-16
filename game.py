@@ -139,11 +139,14 @@ class Rules:
         assert board_state.is_valid()
         assert piece_idx >= 0
         assert piece_idx < board_state.state.size
+        # Not a ball index
+        assert piece_idx != 5
+        assert piece_idx != 11
         col, row = board_state.decode_single_pos(board_state.state[piece_idx])
         valid_moves = []
         for d_col, d_row in KNIGHT_MOVE_POS_DELTA:
             # Try this update
-            new_idx = board_state.encode_single_pos(col + d_col, row + d_row)
+            new_idx = board_state.encode_single_pos((col + d_col, row + d_row))
             candidate_board = copy.deepcopy(board_state)
             candidate_board.update(piece_idx, new_idx)
             if candidate_board.is_valid():
