@@ -1,4 +1,5 @@
 import copy
+import enum
 import numpy as np
 
 
@@ -13,6 +14,28 @@ KNIGHT_MOVE_POS_DELTA = [
     (1, 2),
     (2, 1),
 ]
+
+
+class Player(enum.IntEnum):
+    WHITE = 0
+    """White player's index"""
+    BLACK = 1
+    """Black player's index"""
+
+
+class Graph:
+    def __init__(self, n) -> None:
+        self.adj = np.empty((n, n), dtype=bool)
+        self.adj.fill(False)  # Do not include self-loops by default
+        
+    def add_edge(self, i, j) -> None:
+        self.adj[i, j] = True
+        self.adj[j, i] = True
+    
+    def neighbors(self, i) -> np.ndarray:
+        return np.argwhere(self.adj[i].squeeze())
+    
+    # Add tours?
 
 
 class BoardState:
@@ -31,24 +54,19 @@ class BoardState:
         self.IDX_BALL_WHITE = 5
         self.IDX_BALL_BLACK = 11
         self.decode_state = [self.decode_single_pos(d) for d in self.state]
-
-    def _white_pieces(self):
-        """
-        Return copy of white pieces in state
-        """
-        return self.state.copy()[:5]
     
-    def _black_pieces(self):
+    def player_pieces(self, player_idx):
         """
-        Return copy of black pieces in state
+        Return copy of player's pieces state.
         """
-        return self.state.copy()[6:11]
+        assert player_idx in (Player.WHITE, Player.BLACK)
+        return self.state.copy()[(player_idx * 6):(5 + 6 * player_idx)]
     
     def _all_pieces(self):
         """
         Return white and black pieces, and no ball positions.
         """
-        return np.concatenate((self._white_pieces(), self._black_pieces()))
+        return np.concatenate((self.player_pieces(Player.WHITE), self.player_pieces(Player.BLACK)))
 
     def update(self, idx, val):
         """
@@ -125,8 +143,8 @@ class BoardState:
             # Pieces are on their own squares
             self._all_pieces().size == np.unique(self._all_pieces()).size,
             # Balls are on a piece of their color
-            self.state[self.IDX_BALL_WHITE] in self._white_pieces(),
-            self.state[self.IDX_BALL_BLACK] in self._black_pieces(),
+            self.state[self.IDX_BALL_WHITE] in self.player_pieces(Player.WHITE),
+            self.state[self.IDX_BALL_BLACK] in self.player_pieces(Player.BLACK),
         ))
 
 class Rules:
@@ -165,10 +183,10 @@ class Rules:
         return valid_moves
 
     @staticmethod
-    def single_ball_actions(board_state, player_idx):
+    def single_ball_actions(board_state: BoardState, player_idx):
         """
         Returns the set of possible actions for moving the specified ball, assumed to be the
-        valid ball for plater_idx  in the board_state
+        valid ball for player_idx in the board_state.
 
         Inputs:
             - board_state, assumed to be a BoardState
@@ -176,10 +194,74 @@ class Rules:
         
         Output: an iterable (set or list or tuple) of integers which indicate the encoded positions
             that player_idx's ball can move to during this turn.
-        
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        # TODO - consider visualization and breaking out building connectivity graph
+        # Build an adjacency matrix graph for all pieces of player_idx
+        # - get decoded vector, then check diag/horiz/vert
+        # - check if blocked by other player
+        # Do BFS on graph and return all visited
+        piece_connectivity = Graph(5)  # 5 states
+        pieces = board_state.player_pieces(player_idx)
+        # Check every piece against every other piece
+        for i, piece in enumerate(pieces):
+            source_col, source_row = board_state.decode_single_pos(piece)
+            for j in range(i + 1, len(pieces)):
+                dest_col, dest_row = board_state.decode_single_pos(pieces[j])
+                min_col = min(source_col, dest_col)
+                min_row = min(source_row, dest_row)
+                max_col = max(source_col, dest_col)
+                max_row = max(source_row, dest_row)
+                connected = False
+                # Horizontal
+                if dest_row == source_row:
+                    connected = True
+                    # Collision-checking
+                    for k in range(min_col + 1, max_col):
+                        if (board_state.encode_single_pos((k, dest_row)) 
+                            in board_state.player_pieces(1 - player_idx)):
+                            connected = False
+                            break
+                # Vertical
+                elif dest_col == source_col:
+                    connected = True
+                    # Collision-checking
+                    for k in range(min_row + 1, max_row):
+                        if (board_state.encode_single_pos((dest_col, k)) 
+                            in board_state.player_pieces(1 - player_idx)):
+                            connected = False
+                            break
+                # Diagonal
+                elif abs(dest_col - source_col) == abs(dest_row - source_row):
+                    connected = True
+                    # Collision-checking
+                    for cr in zip(range(min_col + 1, max_col), range(min_row + 1, max_row)):
+                        if (board_state.encode_single_pos(cr) 
+                            in board_state.player_pieces(1 - player_idx)):
+                            connected = False
+                            break
+                if connected:
+                    piece_connectivity.add_edge(i, j)
+        # Do BFS on the graph
+        # BUG - looks like has to do with self-loops - should not be allowed.
+        visited = np.empty_like(pieces, dtype=bool)
+        visited.fill(False)
+        # TODO - make indexing the correct ball by player easier
+        # Start with the ball state
+        state_idx_with_ball = np.argwhere(pieces == board_state.state[5 + 6 * player_idx])[0]
+        frontier = [state_idx_with_ball]
+        while len(frontier) > 0:
+            curr = frontier[0]
+            frontier = frontier[1:]
+            if len(piece_connectivity.neighbors(curr)) == 0:
+                continue
+            for i in piece_connectivity.neighbors(curr):
+                # TODO - fix array squeeze / resizing
+                if np.all(visited[i]):
+                    continue
+                visited[i] = True
+                frontier.append(i)
+        # Convert all visited to positions that may be visited by ball this turn
+        return pieces[visited].tolist()
 
 class GameSimulator:
     """
