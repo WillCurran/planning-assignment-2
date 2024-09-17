@@ -351,8 +351,9 @@ class TestSearch:
 class TestRules:
     
     def test_single_piece_actions(self):
-        # Default state has pieces [1,2,3,4,5,3,50,51,52,53,54,52]
+        # Default state
         board_state = BoardState()
+        assert np.all(board_state.state == np.array([1,2,3,4,5,3,50,51,52,53,54,52]))
         # Knight's moves should be available
         assert set(Rules.single_piece_actions(board_state, 0)) == set((10, 14, 16))
         assert set(Rules.single_piece_actions(board_state, 1)) == set((7, 15, 17, 11))
@@ -361,6 +362,30 @@ class TestRules:
         # Piece with ball cannot move
         assert set(Rules.single_piece_actions(board_state, 2)) == set()
         assert set(Rules.single_piece_actions(board_state, 8)) == set()
+
         # Construct example with same team and other team blocking possible moves
         board_state.state = np.array([24,11,19,4,5,11,50,51,37,33,54,54])
         assert set(Rules.single_piece_actions(board_state, 0)) == set((39, 29, 15, 9))
+
+    def test_single_ball_actions(self):
+        """Warning: Not updating decoded state"""
+        board_state = BoardState()
+        # Default state
+        assert np.all(board_state.state == np.array([1,2,3,4,5,3,50,51,52,53,54,52]))
+        # May pass to all non-ball pieces
+        assert set(Rules.single_ball_actions(board_state, 0)) == set((1, 2, 4, 5))
+        assert set(Rules.single_ball_actions(board_state, 1)) == set((50, 51, 53, 54))
+
+        # Construct example with same team and other team blocking possible moves
+        # TODO - offer viz option?
+        board_state.state = np.array([49,52,39,37,23,23,50,53,47,44,30,50])
+        assert set(Rules.single_ball_actions(board_state, 0)) == set((49, 37, 39))
+        assert set(Rules.single_ball_actions(board_state, 1)) == set((44, 47, 53))
+        
+        # Place ball on an island for both teams
+        board_state.state[board_state.IDX_BALL_WHITE] = 52
+        board_state.state[board_state.IDX_BALL_BLACK] = 30
+        assert set(Rules.single_ball_actions(board_state, 0)) == set(())
+        assert set(Rules.single_ball_actions(board_state, 1)) == set(())
+
+        # TODO - probably need another edge case or two
