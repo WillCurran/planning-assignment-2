@@ -364,13 +364,21 @@ class GameSimulator:
         Output:
             - if the action is valid, return True
             - if the action is not valid, raise ValueError
-        
-        TODO: You need to implement this.
         """
-        if False:
-            raise ValueError("For each case that an action is not valid, specify the reason that the action is not valid in this ValueError.")
-        if True:
+        if action in self.generate_valid_actions(player_idx):
             return True
+        # TODO - how to determine cause for why each action is invalid? Is there a good reason to analyze each case?
+        relative_idx, board_pos = action
+        if relative_idx < 0 or relative_idx > 5:
+            raise ValueError(f"Action relative index {relative_idx} is not one of the 5 possible pieces in [0,5].")
+        if board_pos < 0 or board_pos >= self.game_state.N_COLS * self.game_state.N_ROWS:
+            raise ValueError(
+                f"Board position {board_pos} is not one of the {self.game_state.N_COLS * self.game_state.N_ROWS}"
+                "possible pieces."
+            )
+        if relative_idx == 5:
+            raise ValueError(f"Action to move ball to position {board_pos} is invalid.")
+        raise ValueError(f"Action to move piece to {board_pos} is invalid.")
     
     def update(self, action: tuple, player_idx: int):
         """
