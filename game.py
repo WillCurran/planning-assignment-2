@@ -378,7 +378,7 @@ class GameSimulator:
             )
         if relative_idx == 5:
             raise ValueError(f"Action to move ball to position {board_pos} is invalid.")
-        raise ValueError(f"Action to move piece to {board_pos} is invalid.")
+        raise ValueError(f"Action to move piece to position {board_pos} is invalid.")
     
     def update(self, action: tuple, player_idx: int):
         """

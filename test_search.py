@@ -86,6 +86,12 @@ class TestSearch:
         ((5,2), 0, True, ""),
         ((5,4), 0, True, ""),
         ((5,5), 0, True, ""),
+        ((-1,5), 0, False, "not one of the 5 possible pieces"),
+        ((6,5), 0, False, "not one of the 5 possible pieces"),
+        ((5,-1), 0, False, "Board position -1 is not one of the"),
+        ((5,56), 0, False, "Board position 56 is not one of the"),
+        ((5,8), 0, False, "Action to move ball to position 8 is invalid."),
+        ((0,8), 0, False, "Action to move piece to position 8 is invalid."),
     ])
     def test_validate_action(self, action, player, is_valid, val_msg):
         sim = GameSimulator(None)
