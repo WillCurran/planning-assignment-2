@@ -383,8 +383,8 @@ class TestRules:
         assert set(Rules.single_ball_actions(board_state, 1)) == set((44, 47, 53))
         
         # Place ball on an island for both teams
-        board_state.state[board_state.IDX_BALL_WHITE] = 52
-        board_state.state[board_state.IDX_BALL_BLACK] = 30
+        board_state.state[board_state.ball_idx_by_player_idx(0)] = 52
+        board_state.state[board_state.ball_idx_by_player_idx(1)] = 30
         assert set(Rules.single_ball_actions(board_state, 0)) == set(())
         assert set(Rules.single_ball_actions(board_state, 1)) == set(())
 

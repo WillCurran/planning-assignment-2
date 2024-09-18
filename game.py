@@ -51,16 +51,29 @@ class BoardState:
         self.N_COLS = 7
 
         self.state = np.array([1,2,3,4,5,3,50,51,52,53,54,52])
-        self.IDX_BALL_WHITE = 5
-        self.IDX_BALL_BLACK = 11
         self.decode_state = [self.decode_single_pos(d) for d in self.state]
     
+    # TODO - consider only using player_pieces or player_pieces_idx
     def player_pieces(self, player_idx):
         """
         Return copy of player's pieces state.
         """
         assert player_idx in (Player.WHITE, Player.BLACK)
         return self.state.copy()[(player_idx * 6):(5 + 6 * player_idx)]
+
+    def player_pieces_idx(self, player_idx):
+        """
+        Return ndarray of indices of player's pieces in self.state.
+        """
+        assert player_idx in (Player.WHITE, Player.BLACK)
+        return np.arange(player_idx * 6, 5 + 6 * player_idx)
+    
+    def ball_idx_by_player_idx(self, player_idx):
+        """
+        Return index of player's ball in self.state.
+        """
+        assert player_idx in (Player.WHITE, Player.BLACK)
+        return 5 + 6 * player_idx
     
     def _all_pieces(self):
         """
@@ -118,8 +131,8 @@ class BoardState:
         You can assume that `self.state` contains the current state of the board, so
         check whether self.state represents a terminal board state, and return True or False.
         """
-        _, white_ball_row = self.decode_single_pos(self.state[self.IDX_BALL_WHITE])
-        _, black_ball_row = self.decode_single_pos(self.state[self.IDX_BALL_BLACK])
+        _, white_ball_row = self.decode_single_pos(self.state[self.ball_idx_by_player_idx(Player.WHITE)])
+        _, black_ball_row = self.decode_single_pos(self.state[self.ball_idx_by_player_idx(Player.BLACK)])
         return all((
             self.is_valid(),
             white_ball_row == (self.N_ROWS - 1) or black_ball_row == 0,
@@ -143,8 +156,8 @@ class BoardState:
             # Pieces are on their own squares
             self._all_pieces().size == np.unique(self._all_pieces()).size,
             # Balls are on a piece of their color
-            self.state[self.IDX_BALL_WHITE] in self.player_pieces(Player.WHITE),
-            self.state[self.IDX_BALL_BLACK] in self.player_pieces(Player.BLACK),
+            self.state[self.ball_idx_by_player_idx(Player.WHITE)] in self.player_pieces(Player.WHITE),
+            self.state[self.ball_idx_by_player_idx(Player.BLACK)] in self.player_pieces(Player.BLACK),
         ))
 
 class Rules:
@@ -316,12 +329,28 @@ class GameSimulator:
               all possible actions that the player can take during this turn. relative_idx must be an
               integer on the interval [0, 5] inclusive. Given relative_idx and player_idx, the index for any
               piece in the boardstate can be obtained, so relative_idx is the index relative to current player's
-              pieces. Pieces with relative index 0,1,2,3,4 are block pieces that like knights in chess, and
+              pieces. Pieces with relative index 0,1,2,3,4 are block pieces that move like knights in chess, and
               relative index 5 is the player's ball piece.
-            
-        TODO: You need to implement this.
         """
-        raise NotImplementedError("TODO: Implement this function")
+        actions = []
+        # add block actions
+        for i in range(5):
+            actions.extend(
+                (
+                    (i, board_pos) 
+                    for board_pos in Rules.single_piece_actions(
+                        self.game_state, self.game_state.player_pieces_idx(player_idx)[i]
+                    )
+                )
+            )
+        # add ball actions for this player
+        actions.extend(
+            (
+                (5, board_pos)
+                for board_pos in Rules.single_ball_actions(self.game_state, player_idx)
+            )
+        )
+        return actions
 
     def validate_action(self, action: tuple, player_idx: int):
         """
