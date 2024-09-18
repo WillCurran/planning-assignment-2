@@ -242,7 +242,6 @@ class Rules:
                 if connected:
                     piece_connectivity.add_edge(i, j)
         # Do BFS on the graph
-        # BUG - looks like has to do with self-loops - should not be allowed.
         visited = np.empty_like(pieces, dtype=bool)
         visited.fill(False)
         # TODO - make indexing the correct ball by player easier
@@ -261,7 +260,8 @@ class Rules:
                 visited[i] = True
                 frontier.append(i)
         # Convert all visited to positions that may be visited by ball this turn
-        return pieces[visited].tolist()
+        # (ball may not stay at its current location)
+        return set(pieces[visited].tolist()) - set((pieces[state_idx_with_ball]))
 
 class GameSimulator:
     """
