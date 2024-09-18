@@ -56,16 +56,17 @@ class GameStateProblem(Problem):
         self.search_alg_fnc = None
         self.set_search_alg()
 
-    def set_search_alg(self, alg=""):
+    def set_search_alg(self, alg="bfs"):
         """
         If you decide to implement several search algorithms, and you wish to switch between them,
         pass a string as a parameter to alg, and then set:
             self.search_alg_fnc = self.your_method
         to indicate which algorithm you'd like to run.
-
-        TODO: You need to set self.search_alg_fnc here
         """
-        self.search_alg_fnc = None
+        alg_by_name = {
+            "bfs": self.bfs_search,
+        }
+        self.search_alg_fnc = alg_by_name[alg]
 
     def get_actions(self, state: tuple):
         """
@@ -136,3 +137,41 @@ class GameStateProblem(Problem):
         return solution ## Solution is an ordered list of (s,a)
     """
 
+    def bfs_search(self):
+        """
+        Just BFS with no modifications or uniform-cost planning enhancements
+        """
+        if self.initial_state in self.goal_state_set:
+            return [(self.initial_state, None)]
+        frontier = [self.initial_state]
+        # Back-pointers for visited states
+        parent_state_action_by_state = {self.initial_state: None}  # TODO - storing actual states taking up too much memory?
+        while len(frontier) > 0:
+            # TODO - is this kind of pop operation more expensive than some other FIFO implementation?
+            curr = frontier[0]
+            frontier = frontier[1:]
+            for action in self.get_actions(curr):
+                neighbor = self.execute(curr, action)
+                if neighbor in parent_state_action_by_state:
+                    continue
+                parent_state_action_by_state[neighbor] = (curr, action)  # TODO - could we prune from these states to save memory on bad paths?
+                if neighbor in self.goal_state_set:
+                    return _path_from_parents(parent_state_action_by_state, neighbor)
+                frontier.append(neighbor)
+        raise Exception("BFS failed to find a solution")
+            
+            
+# TODO - unit test and type annotations
+def _path_from_parents(parent_state_action_by_state, final_state):
+    assert final_state in parent_state_action_by_state
+    assert None in parent_state_action_by_state.values()
+    path = [(final_state, None)]
+    curr = final_state
+    print(parent_state_action_by_state)
+    while curr is not None:
+        next_state, next_action = parent_state_action_by_state[curr]
+        if next_action is None:
+            break
+        path.append((next_state, next_action))
+        curr = next_state
+    return list(reversed(path))
