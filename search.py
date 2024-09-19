@@ -167,11 +167,11 @@ def _path_from_parents(parent_state_action_by_state, final_state):
     assert None in parent_state_action_by_state.values()
     path = [(final_state, None)]
     curr = final_state
-    print(parent_state_action_by_state)
     while curr is not None:
-        next_state, next_action = parent_state_action_by_state[curr]
-        if next_action is None:
+        state_action = parent_state_action_by_state[curr]
+        if state_action is None:
             break
+        next_state, next_action = state_action
         path.append((next_state, next_action))
         curr = next_state
     return list(reversed(path))
