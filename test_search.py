@@ -23,28 +23,27 @@ class TestSearch:
         """
         Tests search based planning
         """
+        ## Single Step no ball
         b1 = BoardState()
         b2 = BoardState()
         b2.update(0, 14)
-
-        gsp = GameStateProblem(b1, b2, 0)
-        gsp.set_search_alg(alg)
-        sln = gsp.search_alg_fnc()
-
-        ## Single Step
+        sln = _get_solution(b1, b2, alg)
         ref = [(tuple((tuple(b1.state), 0)), (0, 14)), (tuple((tuple(b2.state), 1)), None)]
         assert sln == ref
 
+        ## Single Step with ball move
+        b2 = BoardState()
+        b2.update(5, 5)
+        sln = _get_solution(b1, b2, alg)
+        ref = [(tuple((tuple(b1.state), 0)), (5, 5)), (tuple((tuple(b2.state), 1)), None)]
+        assert sln == ref
+
+        ## Two Step no ball
         b2 = BoardState()
         b2.update(0, 23)
-        
-        gsp = GameStateProblem(b1, b2, 0)
-        gsp.set_search_alg(alg)
-        sln = gsp.search_alg_fnc()
-
+        sln = _get_solution(b1, b2, alg)
         ## Two Step:
         ## (0, 14) or (0, 10) -> (any) -> (0, 23) -> (undo any) -> (None, goal state)
-
         #print(gsp.goal_state_set)
         #print(sln)
         assert len(sln) == 5 ## Player 1 needs to move once, then move the piece back
@@ -52,6 +51,30 @@ class TestSearch:
         assert sln[1][0][1] == 1
         assert sln[2][1] == (0, 23)
         assert sln[4] == (tuple((tuple(b2.state), 0)), None)
+        
+        ## Force ball to move and move back to same piece
+        # NOTE: With unaltered BFS, time taken very long because we explore all piece moves first before ball
+        b2 = BoardState()
+        b2.update(2, 12)
+        b2.update(5, 12)
+        sln = _get_solution(b1, b2, alg)
+        ## 
+        ## (5, 1/2/4/5) -> (any) -> (2, 12) -> (undo any) -> (5, 12) -> (None, goal state)
+        assert len(sln) == 6 ## Player 1 needs to move once, then move the piece back
+        assert sln[0][0] == tuple((tuple(b1.state), 0))
+        assert sln[0][1][0] == 5
+        assert sln[0][1][1] in (1, 2, 4, 5)
+        assert sln[1][0][1] == 1
+        assert sln[2][1] == (2, 12)
+        assert sln[3][0][1] == 1
+        assert sln[4][1] == (5, 12)
+        assert sln[5] == (tuple((tuple(b2.state), 1)), None)
+        
+        # TODO - moves involving both player
+        # TODO - set more complex state to start w/ obstacles
+        # TODO - several move case 
+        # TODO - check that intermediate states are correct
+        # TODO - add piece-heavy and ball-heavy cases
 
     def test_initial_state(self):
         """
@@ -395,3 +418,9 @@ class TestRules:
         assert set(Rules.single_ball_actions(board_state, 1)) == set(())
 
         # TODO - probably need another edge case or two
+
+
+def _get_solution(start_board, goal_board, alg):
+    gsp = GameStateProblem(start_board, goal_board, 0)
+    gsp.set_search_alg(alg)
+    return gsp.search_alg_fnc()
