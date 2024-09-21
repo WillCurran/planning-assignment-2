@@ -231,10 +231,11 @@ def _knight_manhattan_heuristic(game_state, state_a: BoardState, state_b):
         b_x, b_y = game_state.decode_single_pos(b)
         # Quick way to approximate knight move, even though smaller often means more
         # moves
+        # not admissible?
         count += (abs(b_x - a_x) + abs(b_y - a_y)) / 3
     # Add one for each ball out of place
-    count += int(state_a[0][5] != state_b[0][5])
-    count += int(state_a[0][11] != state_b[0][11])
+    # count += int(state_a[0][5] != state_b[0][5])
+    # count += int(state_a[0][11] != state_b[0][11])
     return count
 
 
