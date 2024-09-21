@@ -69,6 +69,10 @@ class GameStateProblem(Problem):
             "a*_count_pieces_heuristic": self.a_star_search_meta(_count_diff_pieces_heuristic),
             "a*_manhattan_heuristic": self.a_star_search_meta(_knight_manhattan_heuristic),
         }
+        # Default to best current A* implementation
+        if alg not in alg_by_name:
+            self.search_alg_fnc = alg_by_name["a*_manhattan_heuristic"]
+            return
         self.search_alg_fnc = alg_by_name[alg]
 
     def get_actions(self, state: tuple):
