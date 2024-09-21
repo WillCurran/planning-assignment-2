@@ -1,5 +1,6 @@
 import numpy as np
 import queue
+import heapq
 from game import BoardState, GameSimulator, Rules
 
 class Problem:
@@ -65,6 +66,8 @@ class GameStateProblem(Problem):
         """
         alg_by_name = {
             "bfs": self.bfs_search,
+            "a*_count_pieces_heuristic": self.a_star_search_meta(_count_diff_pieces_heuristic),
+            "a*_manhattan_heuristic": self.a_star_search_meta(_knight_manhattan_heuristic),
         }
         self.search_alg_fnc = alg_by_name[alg]
 
@@ -160,8 +163,77 @@ class GameStateProblem(Problem):
                     return _path_from_parents(parent_state_action_by_state, neighbor)
                 frontier.put(neighbor)
         raise Exception("BFS failed to find a solution")
-            
-            
+
+    def a_star_search_meta(self, heuristic_func):
+        """
+        Decorator func to return A* with no modifications or uniform-cost planning enhancements.
+        Heuristic options:
+        - Count number of pieces not in their final position.
+            Admissibility: Yes because need at least one move for each case.
+            Ignores ball moves, obstacles, knight's move.
+        - Count number of knight's moves required for each piece to move to its
+          target. Add one if ball not in final position.
+            Admissibility: Yes because obstacles may increase cost.
+            Ignores ball moves and obstacles.
+        """
+        
+        def _a_star_search():
+            if self.initial_state in self.goal_state_set:
+                return [(self.initial_state, None)]
+            # (priority, cost to get to this state, state)
+            frontier = [(0, 0, self.initial_state)]
+            # Back-pointers for visited states
+            # Using hash demonstrated slight edge ~2% improvement overall for BFS on 6-length path
+            parent_state_action_by_state = {hash(self.initial_state): None}
+            while len(frontier) > 0:
+                _, cost_to_curr, curr = heapq.heappop(frontier)
+                for action in self.get_actions(curr):
+                    neighbor = self.execute(curr, action)
+                    if hash(neighbor) in parent_state_action_by_state:
+                        continue
+                    parent_state_action_by_state[hash(neighbor)] = (curr, action)  # TODO - could we prune from these states to save memory on bad paths?
+                    if neighbor in self.goal_state_set:
+                        return _path_from_parents(parent_state_action_by_state, neighbor)
+                    # Cost to go to neighbor is 1
+                    cost = 1 + cost_to_curr + min(
+                        (heuristic_func(self.sim.game_state, neighbor, g) 
+                         for g in self.goal_state_set)
+                    )
+                    heapq.heappush(frontier, (cost, 1 + cost_to_curr, neighbor))
+            raise Exception("A* failed to find a solution")
+        
+        return _a_star_search
+  
+
+def _count_diff_pieces_heuristic(game_state, state_a, state_b):
+    """
+    Return heuristic value estimated between a and b.
+    state_a and state_b are encoded state tuples.
+    """
+    count = 0
+    for a, b in zip(state_a[0], state_b[0]):
+        count += int(a != b)
+    return count
+
+
+def _knight_manhattan_heuristic(game_state, state_a: BoardState, state_b):
+    """
+    Return heuristic value estimated between a and b.
+    state_a and state_b are encoded state tuples.
+    """
+    count = 0
+    for a, b in zip(state_a[0], state_b[0]):
+        a_x, a_y = game_state.decode_single_pos(a)
+        b_x, b_y = game_state.decode_single_pos(b)
+        # Quick way to approximate knight move, even though smaller often means more
+        # moves
+        count += (abs(b_x - a_x) + abs(b_y - a_y)) / 3
+    # Add one for each ball out of place
+    count += int(state_a[0][5] != state_b[0][5])
+    count += int(state_a[0][11] != state_b[0][11])
+    return count
+
+
 # TODO - unit test and type annotations
 def _path_from_parents(parent_state_action_by_state, final_state):
     assert hash(final_state) in parent_state_action_by_state

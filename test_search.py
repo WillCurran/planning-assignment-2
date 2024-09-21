@@ -18,7 +18,11 @@ class TestSearch:
     ## NOTE: If you'd like to test multiple variants of your algorithms, enter their keys below
     ## in the parametrize function. Your set_search_alg should then set the correct method to
     ## use.
-    @pytest.mark.parametrize("alg", ["bfs"])
+    # Options:
+    # - bfs
+    # - a*_count_pieces_heuristic (Better)
+    # - a*_manhattan_heuristic (Best)
+    @pytest.mark.parametrize("alg", ["a*_count_pieces_heuristic"])
     def test_game_state_problem(self, alg):
         """
         Tests search based planning
